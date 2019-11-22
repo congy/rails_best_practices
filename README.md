@@ -43,6 +43,14 @@ Or for HTML output:
 
 By default rails_best_practices will parse code in the `vendor`, `spec`, `test` and `features` directories.
 
+
+### Use the new function to print all the queries in an application
+
+```
+$ echo "PrintQueryCheck: { }" &> config/rails_best_practices.yml
+$ rails_best_practices . -c config/rails_best_practices.yml
+```
+
 ### Excluding directories
 
 To exclude a directory simply call it with `-e` or `--exclude`:

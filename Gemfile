@@ -3,6 +3,7 @@ gemspec
 
 gem 'coveralls', require: false
 
+gem 'sorcerer'
 gem 'guard'
 gem 'guard-rspec'
 gem 'pry'
