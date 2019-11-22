@@ -5,7 +5,7 @@ module RailsBestPractices
   module Reviews
     class PrintQueryReview < Review
       interesting_nodes :def, :module, :class, :method_add_arg, :method_add_block
-      interesting_files CONTROLLER_FILES, MODEL_FILES
+      interesting_files CONTROLLER_FILES, MODEL_FILES, LIB_FILES, HELPER_FILES, VIEW_FILES
       url 'https://rails-bestpractices.com/posts/2010/10/03/use-query-attribute/'
 
 
