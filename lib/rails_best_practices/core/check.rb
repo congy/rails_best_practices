@@ -10,9 +10,9 @@ module RailsBestPractices
       MODEL_FILES = /app\/models\/.*\.rb$/
       MAILER_FILES = /app\/models\/.*mailer\.rb$|app\/mailers\/.*\.rb/
       VIEW_FILES = /app\/(views|cells)\/.*\.(erb|haml|slim|builder|rxml)$/
-	  LIB_FILES = /lib\/.*\.rb$/
       PARTIAL_VIEW_FILES = /app\/(views|cells)\/.*\/_.*\.(erb|haml|slim|builder|rxml)$/
       ROUTE_FILES = /config\/routes.*\.rb/
+      LIB_FILES = /lib\/.*\.rb$/
       SCHEMA_FILE = /db\/schema\.rb/
       HELPER_FILES = /app\/helpers\/.*\.rb$/
       DEPLOY_FILES = /config\/deploy.*\.rb/

@@ -15,11 +15,11 @@ module RailsBestPractices
       # @param [String] method name
       # @param [Hash] method meta, file and line, {"file" => "app/models/post.rb", "line_number" => 5}
       # @param [String] access control, public, protected or private
-      def add_method(class_name, method_name, meta = {}, access_control = 'public')
+      def add_method(class_name, method_name, meta = {}, access_control = 'public', node=nil)
         return if class_name == ''
         return if has_method?(class_name, method_name)
 
-        methods(class_name) << Method.new(class_name, method_name, access_control, meta)
+        methods(class_name) << Method.new(class_name, method_name, access_control, meta, node)
         if access_control == 'public'
           @possible_methods[method_name] = false
         end
@@ -146,15 +146,16 @@ module RailsBestPractices
 
     # Method info includes class name, method name, access control, file, line_number, used.
     class Method
-      attr_reader :access_control, :class_name, :method_name, :used, :file, :line_number
+      attr_reader :access_control, :class_name, :method_name, :used, :file, :line_number, :node
 
-      def initialize(class_name, method_name, access_control, meta)
+      def initialize(class_name, method_name, access_control, meta, node=nil)
         @class_name = class_name
         @method_name = method_name
         @file = meta['file']
         @line_number = meta['line_number']
         @access_control = access_control
         @used = false
+        @node = node
       end
 
       # Mark the method as used.

@@ -11,7 +11,6 @@ module RailsBestPractices
     #        --output-file FILE           output html file for the analyzing result
     #        --without-color              only output plain text without color
     #        --with-textmate              open file by textmate in html format
-    #        --with-vscode                open file by vscode in html format
     #        --with-sublime               open file by sublime in html format (requires subl-handler)
     #        --with-mvim                  open file by mvim in html format
     #        --with-github GITHUB_NAME    open file on github in html format, GITHUB_NAME is like railsbp/rails-bestpractices.com
@@ -51,10 +50,6 @@ module RailsBestPractices
 
         opts.on('--with-textmate', 'open file by textmate in html format') do
           options['with-textmate'] = true
-        end
-
-        opts.on('--with-vscode', 'open file by vscode in html format') do
-          options['with-vscode'] = true
         end
 
         opts.on('--with-sublime', 'open file by sublime in html format') do

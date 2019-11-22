@@ -25,10 +25,6 @@ module RailsBestPractices
         @variable_use_count ||= {}
       end
 
-	  def variable_caller
-        @variable_caller ||= {}
-      end
-
       # reset @variable_use_count hash.
       def reset_variable_use_count
         @variable_use_count = nil
@@ -63,6 +59,17 @@ module RailsBestPractices
       # @return [Hash]
       def model_attributes
         @model_attributes ||= Prepares.model_attributes
+      end
+
+      # get the model methos from Prepares.
+      #
+      # @return [Hash]
+      def model_methods
+        @model_methods ||= Prepares.model_methods
+      end
+
+      def current_class_name
+        Prepares.current_class_name
       end
     end
   end

@@ -14,6 +14,10 @@ module RailsBestPractices
     #   and after it, there is a call node with message "save" or "save!",
     #   and the receivers of attribute assignment node and call node are the same,
     #   then model association should be used instead of xxx_id assignment.
+    #   issue.project_id = xxx.id
+    #   issue.save!
+    #   issue.project = xxx
+    #   issue.save!
     class UseModelAssociationReview < Review
       interesting_nodes :def
       interesting_files CONTROLLER_FILES
