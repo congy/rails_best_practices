@@ -25,6 +25,10 @@ module RailsBestPractices
         @variable_use_count ||= {}
       end
 
+	  def variable_caller
+        @variable_caller ||= {}
+      end
+
       # reset @variable_use_count hash.
       def reset_variable_use_count
         @variable_use_count = nil
