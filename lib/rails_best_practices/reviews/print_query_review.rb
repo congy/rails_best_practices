@@ -11,7 +11,6 @@ module RailsBestPractices
 
       MULTI_QUERY_METHODS = %w[where pluck distinct eager_load from group having includes joins left_outer_joins limit offset order preload readonly reorder select reselect select_all reverse_order unscope find_each rewhere].freeze
       SINGLE_QUERY_METHODS = %w[find find! take take! first first! last last! find_by find_by!].freeze
-      
       add_callback :start_module do |node|
         @current_class_name = node.module_name.to_s
         @local_variable ||= {}
@@ -161,7 +160,7 @@ module RailsBestPractices
       end
 
       def to_source(node)
-        return Sorcerer.source(node)
+        return Sorcerer.source(node, multiline:true, indent:2)
       end
     end
   end
