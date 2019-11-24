@@ -11,6 +11,7 @@ module RailsBestPractices
       interesting_files MODEL_FILES
 
       ASSOCIATION_METHODS = %w[belongs_to has_one has_many has_and_belongs_to_many embeds_many embeds_one embedded_in many one].freeze
+      VALIDATION_METHODS = %w[validates validate validates_absence_of validates_associated validates_length_of validates_presence_of validates_size_of validates_uniqueness_of validates_inclusion_of validates_each validators_on].freeze
 
       def initialize
         @models = Prepares.models
@@ -95,7 +96,7 @@ module RailsBestPractices
         when 'key'
           attribute_name, attribute_type = node.arguments.all.map(&:to_s)
           @model_attributes.add_attribute(current_class_name, attribute_name, attribute_type)
-        when 'validates'
+        when *VALIDATION_METHODS
           @model_validations.add_validation(current_class_name, node)
         when *ASSOCIATION_METHODS
           remember_association(node)
