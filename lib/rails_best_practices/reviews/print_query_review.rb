@@ -4,7 +4,7 @@ require 'pp'
 module RailsBestPractices
   module Reviews
     class PrintQueryReview < Review
-      interesting_nodes :def, :module, :class, :method_add_arg, :method_add_block
+      interesting_nodes :def, :command, :module, :class, :method_add_arg, :method_add_block
       interesting_files CONTROLLER_FILES, MODEL_FILES, LIB_FILES, HELPER_FILES, VIEW_FILES
       url 'https://rails-bestpractices.com/posts/2010/10/03/use-query-attribute/'
 
@@ -22,16 +22,27 @@ module RailsBestPractices
       end
 
 
-      add_callback :start_def do |node|
-        node.recursive_children do |child|
-          if is_method_call?(child)
-            r = process_methodcall_node?(child, true)
-          elsif child.sexp_type == :assign && is_method_call?(child[2])
-            r = process_methodcall_node?(child[2], true)
-            if r != nil
-              @local_variable.store(child[1].to_s, to_source(child))
+      add_callback :start_def, :start_command do |node|
+        if node.sexp_type == :def
+          node.recursive_children do |child|
+            if is_method_call?(child)
+              r = process_methodcall_node?(child, true)
+            elsif child.sexp_type == :assign && is_method_call?(child[2])
+              r = process_methodcall_node?(child[2], true)
+              if r != nil
+                @local_variable.store(child[1].to_s, to_source(child))
+              end
             end
           end
+        elsif node.sexp_type == :command
+          case node.message.to_s
+            when 'named_scope', 'scope'
+              node.recursive_children do |child|
+                if is_method_call?(child)
+                  r = process_methodcall_node?(child, true)
+                end
+              end
+            end
         end
       end
 
@@ -89,11 +100,13 @@ module RailsBestPractices
         #node_list << temp_node.receiver
         meth_list ||= []
         contain_query = false
+        classes ||= [class_name]
         node_list.reverse.each do |cnode|
           if cnode.sexp_type == :call
             fcall_name = cnode.message.to_s
             if model_association?(class_name, fcall_name)
               class_name = model_association?(class_name, fcall_name)['class_name']
+              classes << class_name
             elsif model_method?(class_name, fcall_name)
               meth = model_method?(class_name, fcall_name)
               #puts "Find meth #{to_source(meth.node)}"
@@ -113,6 +126,11 @@ module RailsBestPractices
           end
         end
         if printout
+          o = output.join(" ").to_s
+          validations = find_corresponding_validation(classes, o)
+          validations.each do |validation|
+            output << " ## involved validation #{validation[0]}: #{validation[1]}"
+          end
           o = output.join("\n")
           if (MULTI_QUERY_METHODS+SINGLE_QUERY_METHODS).map{|x| o.include?(x)}.any?
             puts o
@@ -161,6 +179,36 @@ module RailsBestPractices
 
       def to_source(node)
         return Sorcerer.source(node, multiline:true, indent:2)
+      end
+
+      def find_corresponding_validation(classes, function_source)
+        involved_validations ||= []
+        # a simple match to see if every field involved in the validation is 
+        classes.each do |class_name|
+          model_validations.get_validations(class_name).each do |pair|
+            attribs = pair[0]
+            validation_node = pair[1]
+            # real_attribs ||= []
+            # attribs.each do |attrib|
+            #   if model_attributes.is_attribute?(class_name, attrib)
+            #     real_attribs << attrib
+            #   end
+            # end
+          
+            contain_all_fields = true
+            # real_attribs.each do |attrib|
+            attribs.each do |attrib|
+              if !function_source.include?(attrib)
+                contain_all_fields = false
+                break
+              end
+            end
+            if contain_all_fields==true
+              involved_validations.push [class_name, to_source(validation_node)]
+            end
+          end
+        end  
+        involved_validations  
       end
     end
   end

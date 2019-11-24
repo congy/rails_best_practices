@@ -61,6 +61,10 @@ module RailsBestPractices
         @model_attributes ||= Prepares.model_attributes
       end
 
+      def model_validations
+        @model_validations ||= Prepares.model_validations
+      end
+
       # get the model methos from Prepares.
       #
       # @return [Hash]

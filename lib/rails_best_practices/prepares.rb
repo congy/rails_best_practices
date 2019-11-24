@@ -17,6 +17,10 @@ module RailsBestPractices
         @model_associations ||= Core::ModelAssociations.new
       end
 
+      def model_validations
+        @model_validations ||= Core::ModelValidations.new
+      end
+
       def model_attributes
         @model_attributes ||= Core::ModelAttributes.new
       end

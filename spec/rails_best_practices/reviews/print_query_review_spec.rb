@@ -10,6 +10,7 @@ module RailsBestPractices
         class User < ActiveRecord::Base
           has_many :projects
           belongs_to :location
+          validates :username, uniqueness: {scope: :account}
           scope :loads, ->(ids) {joins(:projects).where(projects: {id: ids}).distinct}
         end
         EOF
@@ -18,6 +19,7 @@ module RailsBestPractices
         content = <<-EOF
         class Post < ActiveRecord::Base
           has_many :comments
+          validates :length, uniqueness: {scope: :parent_id}
         end
         class Comment < ActiveRecord::Base
         end

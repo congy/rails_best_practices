@@ -16,6 +16,7 @@ module RailsBestPractices
         @models = Prepares.models
         @model_associations = Prepares.model_associations
         @model_attributes = Prepares.model_attributes
+        @model_validations = Prepares.model_validations
         @methods = Prepares.model_methods
       end
 
@@ -94,6 +95,8 @@ module RailsBestPractices
         when 'key'
           attribute_name, attribute_type = node.arguments.all.map(&:to_s)
           @model_attributes.add_attribute(current_class_name, attribute_name, attribute_type)
+        when 'validates'
+          @model_validations.add_validation(current_class_name, node)
         when *ASSOCIATION_METHODS
           remember_association(node)
         end
