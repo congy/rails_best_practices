@@ -14,26 +14,30 @@ module RailsBestPractices
       def initialize(options = {})
         super(options)
         @collected_queries = []
-        #@output_filename = options['output_filename']
+        @scopes = {}
+        @output_filename_query = options['output_filename_query']
+        @output_filename_scope = options['output_filename_scope']
+        puts @output_filename_scope
       end
 
       add_callback :start_module do |node|
         @current_class_name = node.module_name.to_s
-        puts "start_module"
       end
 
       add_callback :start_class do |node|
         @current_class_name = node.class_name.to_s
-        puts "start_class"
       end
 
       add_callback :after_check do
-        File.open(@output_filename, 'wb') {|f| f.write(Marshal.dump(@collected_queries))}
-        puts "Output written to #{@output_filename}"
+        File.open(@output_filename_query, 'wb') {|f| f.write(Marshal.dump(@collected_queries))}
+        puts "Query output written to #{@output_filename_query}"
+        File.open(@output_filename_scope, 'wb') {|f| f.write(Marshal.dump(@scopes))}
+        puts "Scope output written to #{@output_filename_scope}"
+        pp @scopes
       end
 
 
-      add_callback :start_def, :start_defs do |node|
+      add_callback :start_def, :start_defs, :start_command do |node|
           if node.sexp_type == :def or node.sexp_type == :defs
               node.recursive_children do |child|
                 begin
@@ -45,6 +49,8 @@ module RailsBestPractices
                 rescue
                 end
               end
+          elsif node.sexp_type == :command and (node.message.to_s == "scope" or node.message.to_s == "named_scope")
+            process_scope(node)
           end
       end
 
@@ -75,6 +81,31 @@ module RailsBestPractices
 
         if (MULTI_QUERY_METHODS+SINGLE_QUERY_METHODS).map{|x| source.include?(x)}.any?
           @collected_queries << {:class => @current_class_name, :stmt => source}
+        end
+      end
+
+      def process_scope(node)
+        begin
+          scope_name = node.arguments.all[0].to_s
+
+          scope_def = nil
+          node.arguments.all[1].recursive_children do |child|
+            begin
+              if child.sexp_type == :stmts_add
+                scope_def = child
+                break
+              end
+            rescue
+            end
+          end
+
+          scope_def = to_source(scope_def).strip
+
+          if (MULTI_QUERY_METHODS+SINGLE_QUERY_METHODS).map{|x| scope_def.include?(x)}.any?
+            key = @current_class_name + "-" + scope_name
+            @scopes[key] = scope_def
+          end
+        rescue
         end
       end
 
