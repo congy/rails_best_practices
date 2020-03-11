@@ -5,7 +5,7 @@ module RailsBestPractices
   module Reviews
     class PrintQueryReview < Review
       interesting_nodes :def, :defs, :command, :module, :class, :method_add_arg, :method_add_block
-      interesting_files CONTROLLER_FILES, MODEL_FILES #LIB_FILES, HELPER_FILES, VIEW_FILES
+      interesting_files CONTROLLER_FILES, MODEL_FILES, LIB_FILES, HELPER_FILES #VIEW_FILES
       url 'https://rails-bestpractices.com/posts/2010/10/03/use-query-attribute/'
 
       MULTI_QUERY_METHODS = %w[where pluck distinct eager_load from group having includes joins left_outer_joins limit offset order preload readonly reorder select reselect select_all reverse_order unscope find_each rewhere].freeze
@@ -17,23 +17,29 @@ module RailsBestPractices
         @scopes = {}
         @output_filename_query = options['output_filename_query']
         @output_filename_scope = options['output_filename_scope']
-        puts @output_filename_scope
+
+        @combined_class_name = ""
+      end
+
+      add_callback :end_module, :end_class do |node|
+        @combined_class_name = ""
       end
 
       add_callback :start_module do |node|
         @current_class_name = node.module_name.to_s
+        @combined_class_name += node.module_name.to_s
       end
 
       add_callback :start_class do |node|
         @current_class_name = node.class_name.to_s
+        @combined_class_name += node.class_name.to_s
       end
-
+      
       add_callback :after_check do
         File.open(@output_filename_query, 'wb') {|f| f.write(Marshal.dump(@collected_queries))}
         puts "Query output written to #{@output_filename_query}"
         File.open(@output_filename_scope, 'wb') {|f| f.write(Marshal.dump(@scopes))}
         puts "Scope output written to #{@output_filename_scope}"
-        pp @scopes
       end
 
 
@@ -80,7 +86,7 @@ module RailsBestPractices
         source = to_source(node).chomp
 
         if (MULTI_QUERY_METHODS+SINGLE_QUERY_METHODS).map{|x| source.include?(x)}.any?
-          @collected_queries << {:class => @current_class_name, :stmt => source}
+          @collected_queries << {:class => @combined_class_name, :stmt => source}
         end
       end
 
@@ -110,6 +116,8 @@ module RailsBestPractices
       end
 
       def is_self?(variable_node)
+        return true if variable_node.base_class.is_a?(CodeAnalyzer::Nil) # No calling variable so implicitly self
+
         if variable_node.sexp_type == :var_ref && variable_node.to_s == "self"
           return models.include?(@current_class_name)
         end
