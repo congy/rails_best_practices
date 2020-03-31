@@ -26,7 +26,7 @@ module RailsBestPractices
         EOF
         runner.prepare('app/models/post.rb', content)
       end
-      
+ 
       it 'should return query chain' do
         content = <<-EOF
         class User < ActiveRecord::Base
@@ -35,6 +35,7 @@ module RailsBestPractices
           scope :loads, lambda { preload(:projects) }
           def test
             self.loads(ids).joins(:location)
+						projects.all
           end
         end
         EOF

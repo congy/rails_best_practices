@@ -28,6 +28,11 @@ module RailsBestPractices
         associations and associations[association_name]
       end
 
+			def get_association_for(model_name)
+				@associations[model_name] ||= {}
+				@associations[model_name]
+			end
+
       # If it is a model's association.
       #
       # @param [String] model name

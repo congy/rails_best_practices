@@ -28,6 +28,11 @@ module RailsBestPractices
         @attributes[model_name][attribute_name]
       end
 
+			def get_attribute_for(model_name)
+				@attributes[model_name] ||= {}
+				@attributes[model_name]
+			end
+
       # If it is a model's attribute.
       #
       # @param [String] model name
