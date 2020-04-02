@@ -83,12 +83,36 @@ module RailsBestPractices
       end
 
 			def collect_schema 
-				models.each do |model|
-					x = model_attributes.get_attribute_for(model.class_name)
-					y = model_associations.get_association_for(model.class_name)
-					if x.length > 0 or y.length > 0
-						@model_attrs[model] = {:fields => x, :associations => y.map{ |name,assoc| {:class_name=>assoc['class_name'].to_s, :rel=>assoc['meta'], :field=>name} } }
+				model_hash = models.map{|model| [model.class_name, model]}.to_h
+				nochange = false
+				model_attribs = models.map{|model| [model.class_name, model_attributes.get_attribute_for(model.class_name)]}.to_h
+				model_assocs = models.map{|model| [model.class_name, model_associations.get_association_for(model.class_name)]}.to_h
+				while !nochange
+					nochange = true
+					models.each do |model|
+						if !model_hash[model.extend_class_name].nil?
+							model_attribs[model.extend_class_name]+['type'].each do |field|
+								if !model_attribs[model.class_name].include?field
+									nochanged = false
+									model_attribs[model.class_name] << field
+								end
+							end
+							model_assocs[model.extend_class_name].each do |name,assoc|
+								if model_assocs[model.class_name][name].nil?
+									nochange = false
+									model_assocs[model.class_name][name] = assoc
+								end
+							end
+						end
 					end
+				end
+				models.each do |model|
+					x = model_attribs[model.class_name]
+					y = model_assocs[model.class_name]
+					@model_attrs[model] = {:fields => x, :associations => y.map{ |name,assoc| {:class_name=>assoc['class_name'].to_s, :rel=>assoc['meta'], :field=>name} } }
+					puts "Model #{model.class_name}, extends #{model.extend_class_name}"
+					puts "\tfields = #{x.inspect}"
+					puts "\tassocs = #{y.map{|n,a| n+'->'+a['class_name']}.join(', ')}"
 				end
 			end
 
