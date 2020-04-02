@@ -91,10 +91,13 @@ module RailsBestPractices
 					nochange = true
 					models.each do |model|
 						if !model_hash[model.extend_class_name].nil?
-							model_attribs[model.extend_class_name]+['type'].each do |field|
-								if !model_attribs[model.class_name].include?field
+							if model_attribs[model.extend_class_name]["type"].nil?
+								model_attribs[model.extend_class_name]["type"] = "string"
+							end
+							model_attribs[model.extend_class_name].each do |field,type|
+								if model_attribs[model.class_name][field].nil?
 									nochanged = false
-									model_attribs[model.class_name] << field
+									model_attribs[model.class_name][field] = type
 								end
 							end
 							model_assocs[model.extend_class_name].each do |name,assoc|
@@ -109,10 +112,10 @@ module RailsBestPractices
 				models.each do |model|
 					x = model_attribs[model.class_name]
 					y = model_assocs[model.class_name]
-					@model_attrs[model] = {:fields => x, :associations => y.map{ |name,assoc| {:class_name=>assoc['class_name'].to_s, :rel=>assoc['meta'], :field=>name} } }
-					puts "Model #{model.class_name}, extends #{model.extend_class_name}"
-					puts "\tfields = #{x.inspect}"
-					puts "\tassocs = #{y.map{|n,a| n+'->'+a['class_name']}.join(', ')}"
+					@model_attrs[model] = {:fields => x, :associations => y.map{ |name,assoc| {:class_name=>assoc['class_name'].to_s, :rel=>assoc['meta'], :field=>name} }, :extend_class_name => model.extend_class_name }
+					#puts "Model #{model.class_name}, extends #{model.extend_class_name}"
+					#puts "\tfields = #{x.inspect}"
+					#puts "\tassocs = #{y.map{|n,a| n+'->'+a['class_name']}.join(', ')}"
 				end
 			end
 
