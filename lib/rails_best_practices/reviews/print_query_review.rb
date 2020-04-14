@@ -8,7 +8,7 @@ module RailsBestPractices
       interesting_files CONTROLLER_FILES, MODEL_FILES, LIB_FILES, HELPER_FILES #VIEW_FILES
       url 'https://rails-bestpractices.com/posts/2010/10/03/use-query-attribute/'
 
-      MULTI_QUERY_METHODS = %w[where pluck distinct eager_load from group having includes joins left_outer_joins limit offset order preload readonly reorder select reselect select_all reverse_order unscope find_each rewhere execute uniq].freeze
+      MULTI_QUERY_METHODS = %w[where where! pluck distinct eager_load from group having includes joins left_outer_joins limit offset order preload readonly reorder select reselect select_all reverse_order unscope find_each rewhere execute uniq].freeze
       SINGLE_QUERY_METHODS = %w[find find! take take! first first! last last! find_by find_by!].freeze
 
       def initialize(options = {})
@@ -56,14 +56,14 @@ module RailsBestPractices
               node.recursive_children do |child|
                 begin
                   if is_method_call?(child)
-                    r = process_method_call_node(child)
+                    r = process_method_call_node(child, "")
                   elsif child.sexp_type == :assign && child[2] && is_method_call?(child[2])
-                    r = process_method_call_node(child[2])
+                    r = process_method_call_node(child[2], "")
 										if r != nil
 										  @local_variable.store(child[1].to_s, to_source(child))
 										end
                   end
-                rescue
+                rescue => error
                 end
               end
           #elsif node.sexp_type == :command and (node.message.to_s == "scope" or node.message.to_s == "named_scope")
@@ -73,11 +73,15 @@ module RailsBestPractices
           	case node.message.to_s
           	  when 'named_scope', 'scope'
           			process_scope(node)
-          	    node.recursive_children do |child|
-          	      if is_method_call?(child)
-          	        r = process_method_call_node(child)
-          	      end
-          	    end
+          			scope_name = node.arguments.all[0].to_s
+								node.arguments.all[1].recursive_children do |child|
+            			begin
+              			if child.sexp_type == :stmts_add
+											process_method_call_node(child[2], scope_name)
+										end
+									rescue => error
+									end
+								end
           	  end
           end
       end
@@ -122,8 +126,15 @@ module RailsBestPractices
       def is_method_call?(node)
         return [:method_add_arg, :call].include?node.sexp_type
       end
+			def is_call_node?(node)
+				return node.sexp_type == :call
+			end
       
-      def process_method_call_node(node)
+      def process_method_call_node(node, func_name)
+				is_scope = ->() {func_name!=""}
+
+				
+
         @processed_node ||= []
         return nil if @processed_node.include?(node)
 				node.recursive_children do |child|
@@ -134,55 +145,63 @@ module RailsBestPractices
         @processed_node << node
 
         call_node = nil
-        node_list ||= []
-        if node.sexp_type == :call
-          call_node = node
+        node_list = []
+        #if is_call_node?(node) 
+				if is_method_call?(node)
+					call_node = node
+				elsif (is_scope.call() and node.sexp_type == :command)
+					call_node = node
 				else
           node.children.each do |child| 
-            if child.sexp_type == :call
+            if is_call_node?(child) #is_method_call?(child) 
               call_node = child
             end
           end
         end
+			
 				return nil if call_node == nil
 
 				node_list << call_node
         call_node.recursive_children do |child|
-          if [:call, :var_ref].include?(child.sexp_type)
+          if [:call, :var_ref].include?(child.sexp_type) 
             node_list << child
           end
         end
 
 				caller_class_lst ||= []
-        variable_node = variable(call_node)
-        return nil if !is_model?(variable_node)
-
-        class_name = get_class_name(variable_node)
-				caller_class_lst << {:method=>variable_node.to_s, :class=>class_name}	
-				@processed_node = @processed_node + node_list
-        meth_list ||= []
-        contain_query = false
-        classes ||= [class_name]
-        node_list.reverse.each do |cnode|
-          if cnode.sexp_type == :call
-            fcall_name = cnode.message.to_s
-            if model_association?(class_name, fcall_name)
-              class_name = model_association?(class_name, fcall_name)['class_name']
-              classes << class_name
-            elsif model_method?(class_name, fcall_name)
-              meth = model_method?(class_name, fcall_name)
-              meth_list << meth
-            end
-						caller_class_lst << {:method => fcall_name, :class => class_name}
-          #else  
-          end
-        end
-
+				if is_scope.call()
+					caller_class_lst << {:method=>call_node.message.to_s, :class=>@current_class_name}
+				else
+        	variable_node = variable(call_node)
+        	return nil if !is_model?(variable_node) && !is_query_function?(node)
+					variable_node = variable_node.blank? ? node : variable_node
+        	class_name = get_class_name(variable_node)
+					caller_class_lst << {:method=>variable_node.to_s, :class=>class_name}	
+				end
+        
+			
+				if ! is_scope.call()	
+					@processed_node = @processed_node + node_list
+        	contain_query = false
+        	classes ||= [class_name]
+        	node_list.reverse.each do |cnode|
+        	  fcall_name = cnode.message.to_s
+        	  if model_association?(class_name, fcall_name)
+        	    class_name = model_association?(class_name, fcall_name)['class_name']
+        	    classes << class_name
+        	  elsif model_method?(class_name, fcall_name)
+        	    meth = model_method?(class_name, fcall_name)
+        	  end
+						if !fcall_name.nil?
+							caller_class_lst << {:method => fcall_name, :class => class_name}
+						end
+        	end
+				end
 
         source = to_source(node).chomp
 
         if (MULTI_QUERY_METHODS+SINGLE_QUERY_METHODS).map{|x| source.include?(x)}.any?
-          @collected_queries << {:class => @combined_class_name, :stmt => source, :caller_class_lst => caller_class_lst}
+          @collected_queries << {:class => @combined_class_name, :stmt => source, :caller_class_lst => caller_class_lst, :method_name => func_name, :filename => @node.file}
         end
       end
 
@@ -221,6 +240,8 @@ module RailsBestPractices
       def is_model?(variable_node)
         if is_self?(variable_node)
           return true
+				elsif is_query_function?(variable_node)
+					return !@current_class_name.nil?
         elsif variable_node.const?
           class_name = variable_node.to_s
         else
@@ -228,9 +249,13 @@ module RailsBestPractices
         end
         models.include?(class_name)
       end
+			
+			def is_query_function?(node)
+        return (MULTI_QUERY_METHODS+SINGLE_QUERY_METHODS).include?(node.message.to_s)
+			end
 
       def get_class_name(variable_node)
-        if is_self?(variable_node)
+        if is_self?(variable_node) || is_query_function?(variable_node) 
          	return @current_class_name 
         elsif variable_node.const?
           return variable_node.to_s
