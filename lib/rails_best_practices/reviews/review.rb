@@ -72,6 +72,22 @@ module RailsBestPractices
         @model_methods ||= Prepares.model_methods
       end
 
+      def controller_methods
+        @controller_methods ||= Prepares.controller_methods
+      end
+
+			def helper_methods
+        @helper_methods ||= Prepares.helper_methods
+      end
+
+			def lib_methods
+        @lib_methods ||= Prepares.lib_methods
+      end
+
+			def controllers
+				@controllers ||= Prepares.controllers
+			end
+
       def current_class_name
         Prepares.current_class_name
       end

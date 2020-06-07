@@ -7,6 +7,7 @@ module RailsBestPractices
       include Core::Check::Classable
       include Core::Check::InheritedResourcesable
       include Core::Check::Accessable
+      include Core::Check::Moduleable
 
       interesting_nodes :class, :var_ref, :vcall, :command, :def
       interesting_files CONTROLLER_FILES
@@ -25,6 +26,14 @@ module RailsBestPractices
       add_callback :start_class do |_node|
         @controllers << @klass
         @current_controller_name = @klass.to_s
+        @actions = DEFAULT_ACTIONS if @inherited_resources
+        @current_class_name = @klass.to_s
+      end
+
+      add_callback :start_module do |_node|
+        @controllers << Core::Mod.new(current_module_name, [])
+        @current_controller_name = current_module_name
+        @current_class_name = current_module_name
         @actions = DEFAULT_ACTIONS if @inherited_resources
       end
 
@@ -78,7 +87,7 @@ module RailsBestPractices
       #     }
       add_callback :start_def do |node|
         method_name = node.method_name.to_s
-        @methods.add_method(current_class_name, method_name, { 'file' => node.file, 'line_number' => node.line_number }, current_access_control)
+        @methods.add_method(@current_class_name, method_name, { 'file' => node.file, 'line_number' => node.line_number }, current_access_control, node)
       end
 
       # ask Reviews::RemoveUnusedMoethodsInHelperReview to check the controllers who include helpers.

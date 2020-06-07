@@ -49,6 +49,14 @@ module RailsBestPractices
         @helper_methods ||= Core::Methods.new
       end
 
+      def libs
+        @libs ||= Core::Helpers.new
+      end
+
+      def lib_methods
+        @lib_methods ||= Core::Methods.new
+      end
+
       def routes
         @routes ||= Core::Routes.new
       end
