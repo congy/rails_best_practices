@@ -34,6 +34,7 @@ module RailsBestPractices
 					puts "Assign to #{model}:"
 					fields = []
 					assign_stmts.each do |meth_name, assign|
+						next if assign.length==0
 						puts "\tmeth #{assign[0][:file]} : #{meth_name}"
 						assign.each do |a|
 							puts "\t\t#{a[:source].gsub(/[\r\n]+/,'')} || #{a[:fields]}"

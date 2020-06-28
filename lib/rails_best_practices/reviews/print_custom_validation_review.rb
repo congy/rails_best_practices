@@ -30,18 +30,19 @@ module RailsBestPractices
 			add_callback :start_def, :start_defs, :start_command do |node|
         arguments = node.arguments.all
         case node.message.to_s
-        	when 'validate'
-						arguments.each do |arg1|
-							puts "\n#{@node.file} : #{to_source(node)}"
+          when 'validate'
+            arguments.each do |arg1|
+              puts "\n#{@node.file} : #{to_source(node)}"
 							begin
 								m = get_method("#{arg1}")
 								if m
 									puts to_source(m.node)
 								end
 								puts "==========\n"
-							rescue => error
+              rescue => error
+                puts "Error = #{error}"
 							end
-					end
+					  end
 				end
 			end
 
@@ -53,7 +54,7 @@ module RailsBestPractices
 			end
 
       def to_source(node)
-        return sorcerer.source(node, multiline:false, indent:2)
+        return Sorcerer.source(node, multiline:false, indent:2)
       end
 		end
 	end
