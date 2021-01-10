@@ -29,24 +29,25 @@ module RailsBestPractices
       #    message = node.message.to_s
       #    if %w[save update_attributes].include? message
 
-      add_callback :after_check do
-        @assigns.each do |model, assign_stmts|
-          puts "Assign to #{model}:"
-          fields = []
-          assign_stmts.each do |meth_name, assign|
-            next if assign.length == 0
-            puts "\tmeth #{assign[0][:file]} : #{meth_name}"
-            assign.each do |a|
-              puts "\t\t#{a[:source].gsub(/[\r\n]+/, "")} || #{a[:fields]}"
-              fields = fields + a[:fields]
-            end
-          end
-          model_attribs = model_attributes.get_attribute_for(model)
-          left_fields = model_attribs.select { |x| !fields.include?(x.to_s) }
-          puts "\t-- left attribs = #{left_fields}"
-          puts ""
-        end
-      end
+      # add_callback :after_check do
+      #   @assigns.each do |model, assign_stmts|
+      #     puts "Assign to #{model}:"
+      #     fields = []
+      #     assign_stmts.each do |meth_name, assign|
+      #       next if assign.length == 0
+      #       puts "\tmeth #{assign[0][:file]} : #{meth_name}"
+      #       assign.each do |a|
+      #         #   puts "\t\t#{a[:source].gsub(/[\r\n]+/, "")} || #{a[:fields]}"
+      #         # puts "\t\t#{a[:source].gsub(/[\r\n]+/, "")}"
+      #         fields = fields + a[:fields]
+      #       end
+      #     end
+      #     model_attribs = model_attributes.get_attribute_for(model)
+      #     left_fields = model_attribs.select { |x| !fields.include?(x.to_s) }
+      #     puts "\t-- left attribs = #{left_fields}"
+      #     puts ""
+      #   end
+      # end
 
       add_callback :start_def, :start_defs, :start_command do |node|
         current_method = node.method_name.to_s
@@ -84,6 +85,27 @@ module RailsBestPractices
                     @all_assigns[lft] = model_name
                   end
                   if child[2].message.to_s == "new" and !model_name.nil?
+                    # extract constraints:
+                    # @time_entry = TimeEntry.new(:issue => @issue, :project => @issue.project)
+                    if child[2].sexp_type == :method_add_arg && child[2].arguments.all.first.sexp_type == :bare_assoc_hash
+                      child[2].arguments.all.each { |arg|
+                        var_refs = arg.hash_values.select { |e| e.sexp_type == :var_ref }
+                        calls = arg.hash_values.select { |e| e.sexp_type == :call }
+                        constraints = []
+                        calls.each { |call|
+                          idx = arg.hash_values.find_index { |v| v.to_s == call[1].to_s }
+                          if idx
+                            puts "Source:"
+                            puts "\t" + to_source(child)
+                            puts "Constraint:"
+                            assign_field_idx = arg.hash_values.find_index(call)
+                            puts "\t" + model_name.to_s + "." + arg.hash_keys[idx].to_s + "." + call[3].to_s \
+                                   + " = " + model_name.to_s + "." + arg.hash_keys[assign_field_idx].to_s
+                          end
+                        }
+                      }
+                    end
+
                     fields = find_all_fields_involved(child, model_name)
                     #puts "\tfields = #{fields}"
                     add_to_assign(current_method, child, model_name, child[1], fields)
@@ -106,7 +128,10 @@ module RailsBestPractices
         if !@assigns[model].has_key?(meth_name)
           @assigns[model][meth_name] ||= []
         end
-        @assigns[model][meth_name] << { :source => to_source(node), :fields => fields, :variable => variable, :file => @node.file }
+        @assigns[model][meth_name] << { :source => to_source(node),
+                                        :fields => fields,
+                                        :variable => variable,
+                                        :file => @node.file }
       end
 
       def is_method_call?(node)
